@@ -1,2 +1,2 @@
-# simple_shell
-A team project between Gbadebo Adetilewa and Temiloluwa Adewale
+this is a simple shell project ========== we partnered to do this project together. 
+Gbadebo Adetilewa and Temiloluwa Adewale.
