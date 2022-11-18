@@ -1,47 +1,44 @@
 #include "shell.h"
 
 /**
- * main - main entry point of the program
- * @ac: number of arguments
- * @av: argument list
- * Return: 0 if successful
-*/
-
-int main(void)
-	
+ * main - entry point
+ * @ac: arg count
+ * @av: arg vector
+ *
+ * Return: 0 on success, 1 on error
+ */
+int main(int ac, char **av)
 {
-	char *buffer, **commands;
-	list_t *linkedlist_path, *env_list;
-	int characters;
-	size_t bufsize = BUFSIZE;
-	
-	buffer = (char *)malloc(bufsize * sizeof(char));
-	if (buffer == NULL)
+	info_t info[] = { INFO_INIT };
+	int fd = 2;
+
+	asm ("mov %1, %0\n\t"
+		"add $3, %0"
+		: "=r" (fd)
+		: "r" (fd));
+
+	if (ac == 2)
 	{
-		perror("Unable to allocate buffer");
-		exit(1);
+		fd = open(av[1], O_RDONLY);
+		if (fd == -1)
+		{
+			if (errno == EACCES)
+				exit(126);
+			if (errno == ENOENT)
+			{
+				_eputs(av[0]);
+				_eputs(": 0: Can't open ");
+				_eputs(av[1]);
+				_eputchar('\n');
+				_eputchar(BUF_FLUSH);
+				exit(127);
+			}
+			return (EXIT_FAILURE);
+		}
+		info->readfd = fd;
 	}
-	
-	linkedlist_path = path_list();
-	env_list = environ_list();
-	while (1)
-	{
-		if (isatty(STDIN_FILENO)) /* reprompt if in interactive shell */
-			write(STDOUT_FILENO, "$ ", 3);
-		else
-			non_interactive(env_list);
-
-		signal(SIGINT, ctrl_c); /* makes ctrl+c not work */
-		characters = getline(&buffer, &bufsize, stdin);
-		ctrl_D(characters, buffer, env_list);
-
-		commands = split_line(buffer);
-		if (_builtin(commands[0]))
-			_builtin(commands[0])(commands, linkedlist_path, buffer);
-		else
-			execute(commands, linkedlist_path);
-		free(commands);
-	}
-
-	return (0);
+	populate_env_list(info);
+	read_history(info);
+	hsh(info, av);
+	return (EXIT_SUCCESS);
 }
